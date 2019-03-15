@@ -1,0 +1,43 @@
+version: '2'
+services:
+
+  elasticsearch:
+    image: docker.elastic.co/elasticsearch/elasticsearch-oss:6.2.4
+    volumes:
+      - ./elasticsearch:/usr/share/elasticsearch/data
+    environment:
+      - cluster.name=entercorp-cluster
+      - bootstrap.memory_lock=true
+      - "ES_JAVA_OPTS=-Xms512m -Xmx512m"
+    ulimits:
+      memlock:
+        soft: -1
+        hard: -1
+    ports:
+      - "9200:9200"
+      - "9300:9300"
+
+  fluentd:
+    build: ./fluentd
+    volumes:
+      - ./fluentd/conf:/fluentd/etc
+      - ./data:/fluentd/log
+    ports:
+      - "24224:24224"
+      - "24224:24224/udp"
+    # logging:
+    #   driver: "json-file"
+    #   options:
+    #     max-size: 100m
+    #     max-file: "5"
+    links:
+      - "elasticsearch"
+
+  kibana:
+    image: docker.elastic.co/kibana/kibana-oss:6.2.4
+    ports:
+      - "5601:5601"
+    environment:
+      ELASTICSEARCH_URL: http://elasticsearch:9200
+    links:
+      - "elasticsearch"
